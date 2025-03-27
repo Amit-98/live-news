@@ -1,0 +1,88 @@
+<!-- ../Views/index.ejs !-->
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>News Aggregator</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100">
+    <div
+      class="container mx-auto mt-8 flex flex-col items-center justify-center"
+    >
+      <form
+        action="/search"
+        method="GET"
+        class="flex items-center justify-center mt-4"
+      >
+        <input
+          class="w-64 px-4 py-2 rounded-l-lg border border-gray-300 focus:outline-none focus:border-blue-500"
+          name="search"
+          type="search"
+          placeholder="Search"
+          aria-label="Search"
+        />
+        <button
+          class="px-4 py-2 bg-red-500 text-white rounded-r-lg hover:bg-red-600"
+          type="submit"
+        >
+          Search
+        </button>
+      </form>
+
+      <form action="/sort-by-date" method="GET">
+        <button
+          class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          type="submit"
+        >
+          Sort by Date
+        </button>
+      </form>
+
+      <form action="/news-by-date" method="GET" class="mt-4">
+        <label for="specific-date" class="block mb-2"
+          >Get News for Specific Date:</label
+        >
+        <input
+          id="specific-date"
+          class="w-64 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500"
+          name="date"
+          type="date"
+          aria-label="Specific Date"
+        />
+        <button
+          class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+          type="submit"
+        >
+          Get News
+        </button>
+      </form>
+
+      <h1 class="text-3xl font-bold my-4 text-center">Latest News</h1>
+      <div
+        id="news-container"
+        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+      >
+        <% news.forEach(article => { %>
+        <div class="article border p-4 bg-white rounded-lg shadow-md">
+          <h2 class="text-lg font-bold mb-2"><%= article.title %></h2>
+          <p class="text-gray-700"><%= article.description %></p>
+          <p class="text-gray-700 article-date">
+            Published at: <%= article.publishedAt %>
+          </p>
+          <a
+            href="<%= article.url %>"
+            class="text-blue-600 font-semibold mt-2 inline-block"
+            >Read more</a
+          >
+        </div>
+        <% }); %>
+      </div>
+    </div>
+  </body>
+</html>
