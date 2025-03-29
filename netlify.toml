@@ -1,6 +1,6 @@
 [build]
+  command = "npm install"
   functions = "functions"
-  command = "npm run build"
 
 [[redirects]]
   from = "/*"

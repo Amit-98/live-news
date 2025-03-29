@@ -8,9 +8,15 @@ const serverless = require('serverless-http');
 const app = express();
 
 // Middleware
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use((req, res, next) => {
+  req.url = req.url.replace(/^\/\.netlify\/functions\/server/, "");
+  next();
+});
 //app.use(express.static(path.join(__dirname, '../public')));
 //let file = require("../views/index.ejs");
 // View engine setup
@@ -313,9 +319,10 @@ app.use((req, res) => {
   });
 });
 
-module.exports.handler = serverless(app);
 // Start the server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
+
+module.exports.handler = serverless(app);
