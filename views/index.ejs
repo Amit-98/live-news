@@ -240,10 +240,10 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       <% if (news && news.length > 0) { %>
         <% news.forEach((article, index) => { %>
-          <article class="article-card bg-white rounded-lg overflow-hidden shadow-md fade-in" style="animation-delay: <%= index * 0.1 %>s">
+          <article class="article-card bg-white rounded-lg overflow-hidden shadow-md fade-in" data-animation-delay="<%= index * 0.1 %>s">
             <% if (article.urlToImage) { %>
               <div class="h-48 overflow-hidden">
-                <img src="<%= article.urlToImage %>" alt="<%= article.title %>" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400x200?text=News'">
+                <img src="<%= article.urlToImage %>" alt="<%= article.title %>" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400x200?text=News'"%>
               </div>
             <% } else { %>
               <div class="h-48 bg-gray-200 flex items-center justify-center">
@@ -345,8 +345,11 @@
     // Add animation delay to articles
     document.addEventListener('DOMContentLoaded', function() {
       const articles = document.querySelectorAll('.article-card');
-      articles.forEach((article, index) => {
-        article.style.animationDelay = `${index * 0.1}s`;
+      articles.forEach(article => {
+        const delay = article.getAttribute('data-animation-delay');
+        if (delay) {
+          article.style.animationDelay = delay;
+        }
       });
       
       // Set today's date as default for date inputs if not already set
