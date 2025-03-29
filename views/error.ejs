@@ -1,0 +1,31 @@
+<!-- views/error.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error - NewsFlow</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white p-8 rounded-lg shadow-lg max-w-md w-full text-center">
+    <div class="text-6xl text-red-500 mb-4">
+      <i class="fas fa-exclamation-circle"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-800 mb-2">Oops! Something went wrong</h1>
+    <p class="text-gray-600 mb-6"><%= message %></p>
+    
+    <% if (error && error.stack) { %>
+      <details class="mb-6 text-left">
+        <summary class="text-sm text-gray-500 cursor-pointer">Technical details</summary>
+        <pre class="bg-gray-100 p-4 rounded mt-2 text-xs overflow-auto"><%= error.stack %></pre>
+      </details>
+    <% } %>
+    
+    <a href="/" class="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
+      <i class="fas fa-home mr-2"></i> Return Home
+    </a>
+  </div>
+</body>
+</html>

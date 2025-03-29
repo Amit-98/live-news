@@ -1,88 +1,374 @@
-<!-- ../Views/index.ejs !-->
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>News Aggregator</title>
-    <link
-      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
-      rel="stylesheet"
-    />
-  </head>
-  <body class="bg-gray-100">
-    <div
-      class="container mx-auto mt-8 flex flex-col items-center justify-center"
-    >
-      <form
-        action="/search"
-        method="GET"
-        class="flex items-center justify-center mt-4"
-      >
-        <input
-          class="w-64 px-4 py-2 rounded-l-lg border border-gray-300 focus:outline-none focus:border-blue-500"
-          name="search"
-          type="search"
-          placeholder="Search"
-          aria-label="Search"
-        />
-        <button
-          class="px-4 py-2 bg-red-500 text-white rounded-r-lg hover:bg-red-600"
-          type="submit"
-        >
-          Search
-        </button>
-      </form>
-
-      <form action="/sort-by-date" method="GET">
-        <button
-          class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-          type="submit"
-        >
-          Sort by Date
-        </button>
-      </form>
-
-      <form action="/news-by-date" method="GET" class="mt-4">
-        <label for="specific-date" class="block mb-2"
-          >Get News for Specific Date:</label
-        >
-        <input
-          id="specific-date"
-          class="w-64 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:border-blue-500"
-          name="date"
-          type="date"
-          aria-label="Specific Date"
-        />
-        <button
-          class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-          type="submit"
-        >
-          Get News
-        </button>
-      </form>
-
-      <h1 class="text-3xl font-bold my-4 text-center">Latest News</h1>
-      <div
-        id="news-container"
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-      >
-        <% news.forEach(article => { %>
-        <div class="article border p-4 bg-white rounded-lg shadow-md">
-          <h2 class="text-lg font-bold mb-2"><%= article.title %></h2>
-          <p class="text-gray-700"><%= article.description %></p>
-          <p class="text-gray-700 article-date">
-            Published at: <%= article.publishedAt %>
-          </p>
-          <a
-            href="<%= article.url %>"
-            class="text-blue-600 font-semibold mt-2 inline-block"
-            >Read more</a
-          >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NewsFlow</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <style>
+    .article-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .article-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    .hero-section {
+      background-image: linear-gradient(rgba(0, 0, 32, 0.7), rgba(0, 0, 32, 0.7)), url('https://via.placeholder.com/1200x400');
+      background-size: cover;
+      background-position: center;
+    }
+    .search-container {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .fade-in {
+      animation: fadeIn 0.5s ease-in-out forwards;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white shadow-md sticky top-0 z-10">
+    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+      <div class="flex items-center">
+        <div class="mr-2 text-2xl text-blue-600">
+          <i class="fas fa-newspaper"></i>
         </div>
-        <% }); %>
+        <a href="/" class="text-2xl font-bold text-gray-800">NewsFlow</a>
+      </div>
+
+      <!-- Integrated search bar in header -->
+      <div class="hidden md:flex flex-grow mx-6 max-w-xl">
+        <form action="/search" method="GET" class="flex w-full">
+          <input
+            class="w-full py-2 px-4 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            name="search"
+            type="search"
+            placeholder="Search for news..."
+            aria-label="Search"
+            value="<%= locals.searchTerm || '' %>"
+          />
+          <input 
+            type="hidden" 
+            name="date" 
+            value="<%= locals.currentDate || '' %>" 
+            id="header-date-input"
+          />
+          <input 
+            type="hidden" 
+            name="category" 
+            value="<%= locals.category || '' %>" 
+            id="header-category-input"
+          />
+          <button
+            class="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700 transition"
+            type="submit"
+          >
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
+      </div>
+
+      <button class="md:hidden text-gray-700 focus:outline-none" id="mobile-menu-button">
+        <i class="fas fa-bars text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Mobile Menu with Search -->
+    <div class="md:hidden hidden bg-white border-t" id="mobile-menu">
+      <div class="container mx-auto px-4 py-3 flex flex-col space-y-3">
+        <form action="/search" method="GET" class="flex w-full">
+          <input
+            class="w-full py-2 px-4 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            name="search"
+            type="search"
+            placeholder="Search for news..."
+            aria-label="Search"
+            value="<%= locals.searchTerm || '' %>"
+          />
+          <input 
+            type="hidden" 
+            name="date" 
+            value="<%= locals.currentDate || '' %>" 
+          />
+          <input 
+            type="hidden" 
+            name="category" 
+            value="<%= locals.category || '' %>" 
+          />
+          <button
+            class="bg-blue-600 text-white px-4 py-2 rounded-r-lg hover:bg-blue-700 transition"
+            type="submit"
+          >
+            <i class="fas fa-search"></i>
+          </button>
+        </form>
       </div>
     </div>
-  </body>
+  </header>
+
+  <!-- Filter Controls Section -->
+  <section class="bg-white border-b shadow-sm">
+    <div class="container mx-auto px-4 py-4">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <!-- Category Filter -->
+        <div class="flex items-center space-x-2">
+          <form action="/categories" method="GET" class="flex items-center gap-2">
+            <span class="text-gray-700 font-medium">Category:</span>
+            <select 
+              name="category" 
+              id="category-select"
+              onchange="this.form.submit()"
+              class="appearance-none bg-gray-50 border border-gray-300 rounded-md px-3 py-2 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="">All Categories</option>
+              <option value="business" <%= locals.category === 'business' ? 'selected' : '' %>>Business</option>
+              <option value="technology" <%= locals.category === 'technology' ? 'selected' : '' %>>Technology</option>
+              <option value="sports" <%= locals.category === 'sports' ? 'selected' : '' %>>Sports</option>
+              <option value="health" <%= locals.category === 'health' ? 'selected' : '' %>>Health</option>
+              <option value="science" <%= locals.category === 'science' ? 'selected' : '' %>>Science</option>
+              <option value="entertainment" <%= locals.category === 'entertainment' ? 'selected' : '' %>>Entertainment</option>
+              <option value="general" <%= locals.category === 'general' ? 'selected' : '' %>>General</option>
+            </select>
+            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+              <i class="fas fa-chevron-down"></i>
+            </div>
+            <input type="hidden" name="date" value="<%= locals.currentDate || '' %>" />
+            
+            <!-- Clear category filter button (visible only when category is selected) -->
+            <% if (locals.category) { %>
+              <a href="/" 
+                 class="ml-2 px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition text-sm flex items-center">
+                <i class="fas fa-times mr-1"></i> Clear
+              </a>
+            <% } %>
+          </form>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <!-- Sort by Latest 
+          <form action="/sort-by-date" method="GET" class="flex items-center">
+            
+            <button
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition flex items-center justify-center"
+              type="submit"
+            >
+              <i class="fas fa-sort-amount-down mr-2"></i>
+              Latest
+            </button>
+          </form>-->
+
+          <!-- Date Filter -->
+          <form action="/news-by-date" method="GET" class="flex items-center gap-2">
+            <input
+              id="specific-date"
+              class="px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              name="date"
+              type="date"
+              value="<%= locals.currentDate || '' %>"
+              aria-label="Specific Date"
+            />
+            <input type="hidden" name="category" value="<%= locals.category || '' %>" />
+            <button
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition flex items-center justify-center"
+              type="submit"
+            >
+              <i class="fas fa-calendar-alt mr-2"></i>
+              Get News
+            </button>
+            
+            <!-- Clear date filter button (visible only when date is selected) -->
+            <% if (locals.currentDate) { %>
+              <a href="<%= locals.category ? '/categories?category=' + locals.category : '/' %>" 
+                 class="px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition text-sm flex items-center">
+                <i class="fas fa-times mr-1"></i> Clear Date
+              </a>
+            <% } %>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Active filters and Clear All button -->
+      <% if ((locals.category && locals.category.length > 0) || locals.currentDate) { %>
+        <div class="mt-4 flex items-center">
+          <div class="text-sm text-gray-600 mr-2">Active filters:</div>
+          <div class="flex flex-wrap gap-2">
+            <% if (locals.category && locals.category.length > 0) { %>
+              <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                Category: <%= locals.category.charAt(0).toUpperCase() + locals.category.slice(1) %>
+              </span>
+            <% } %>
+            <% if (locals.currentDate) { %>
+              <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                Date: <%= new Date(locals.currentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+              </span>
+            <% } %>
+            <a href="/" class="bg-red-100 text-red-800 text-xs px-2 py-1 rounded hover:bg-red-200 transition flex items-center">
+              <i class="fas fa-times-circle mr-1"></i> Clear All Filters
+            </a>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="container mx-auto px-4 py-8">
+    <% if (locals.searchTerm) { %>
+      <h2 class="text-2xl font-bold mb-6">
+        Search Results for "<%= searchTerm %>"
+        <% if (locals.category) { %> in <%= category.charAt(0).toUpperCase() + category.slice(1) %> <% } %>
+        <% if (locals.currentDate) { %> for <%= new Date(currentDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %> <% } %>
+      </h2>
+    <% } else if (locals.date) { %>
+      <h2 class="text-2xl font-bold mb-6">
+        News for <%= new Date(date).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+        <% if (locals.category) { %> in <%= category.charAt(0).toUpperCase() + category.slice(1) %> <% } %>
+      </h2>
+    <% } else if (locals.category) { %>
+      <h2 class="text-2xl font-bold mb-6"><%= category.charAt(0).toUpperCase() + category.slice(1) %> News</h2>
+    <% } else { %>
+      <h2 class="text-2xl font-bold mb-6">Today's Headlines</h2>
+    <% } %>
+
+    <!-- News Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      <% if (news && news.length > 0) { %>
+        <% news.forEach((article, index) => { %>
+          <article class="article-card bg-white rounded-lg overflow-hidden shadow-md fade-in" style="animation-delay: <%= index * 0.1 %>s">
+            <% if (article.urlToImage) { %>
+              <div class="h-48 overflow-hidden">
+                <img src="<%= article.urlToImage %>" alt="<%= article.title %>" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400x200?text=News'">
+              </div>
+            <% } else { %>
+              <div class="h-48 bg-gray-200 flex items-center justify-center">
+                <i class="fas fa-newspaper text-4xl text-gray-400"></i>
+              </div>
+            <% } %>
+            
+            <div class="p-5">
+              <div class="flex items-center text-sm text-gray-500 mb-2">
+                <% if (article.source && article.source.name) { %>
+                  <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded mr-2"><%= article.source.name %></span>
+                <% } %>
+                <time datetime="<%= article.publishedAt %>">
+                  <i class="far fa-clock mr-1"></i>
+                  <%= new Date(article.publishedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+                </time>
+              </div>
+              
+              <h3 class="text-xl font-bold mb-2 hover:text-blue-600 transition">
+                <a href="<%= article.url %>" target="_blank"><%= article.title %></a>
+              </h3>
+              
+              <p class="text-gray-600 mb-4 line-clamp-3">
+                <%= article.description || "No description available" %>
+              </p>
+              
+              <a href="<%= article.url %>" target="_blank" class="inline-flex items-center text-blue-600 font-semibold hover:text-blue-800 transition">
+                Read full story
+                <i class="fas fa-arrow-right ml-2"></i>
+              </a>
+            </div>
+          </article>
+        <% }); %>
+      <% } else { %>
+        <div class="col-span-3 py-12 text-center">
+          <div class="text-5xl text-gray-300 mb-4"><i class="fas fa-newspaper"></i></div>
+          <h3 class="text-xl font-medium text-gray-700 mb-2">No articles found</h3>
+          <p class="text-gray-500">Try adjusting your search or filters to find what you're looking for.</p>
+        </div>
+      <% } %>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white mt-12">
+    <div class="container mx-auto px-4 py-12">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div>
+          <h3 class="text-xl font-bold mb-4">NewsFlow</h3>
+          <p class="text-gray-400">Your trusted source for the latest news and insights from around the world.</p>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Categories</h4>
+          <ul class="space-y-2">
+            <li><a href="/categories?category=business" class="text-gray-400 hover:text-white">Business</a></li>
+            <li><a href="/categories?category=technology" class="text-gray-400 hover:text-white">Technology</a></li>
+            <li><a href="/categories?category=sports" class="text-gray-400 hover:text-white">Sports</a></li>
+            <li><a href="/categories?category=health" class="text-gray-400 hover:text-white">Health</a></li>
+            <li><a href="/categories?category=science" class="text-gray-400 hover:text-white">Science</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Company</h4>
+          <ul class="space-y-2">
+            <li><a href="#" class="text-gray-400 hover:text-white">About Us</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white">Contact</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white">Privacy Policy</a></li>
+            <li><a href="#" class="text-gray-400 hover:text-white">Terms of Service</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-4">Stay Connected</h4>
+          <div class="flex space-x-4 mb-4">
+            <a href="#" class="text-gray-400 hover:text-white text-xl"><i class="fab fa-facebook"></i></a>
+            <a href="#" class="text-gray-400 hover:text-white text-xl"><i class="fab fa-twitter"></i></a>
+            <a href="#" class="text-gray-400 hover:text-white text-xl"><i class="fab fa-instagram"></i></a>
+            <a href="#" class="text-gray-400 hover:text-white text-xl"><i class="fab fa-linkedin"></i></a>
+          </div>
+        </div>
+      </div>
+      
+      <div class="border-t border-gray-700 mt-10 pt-6 text-center text-gray-400">
+        <p>&copy; <%= new Date().getFullYear() %> NewsFlow. All rights reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    // Toggle mobile menu
+    document.getElementById('mobile-menu-button').addEventListener('click', function() {
+      const mobileMenu = document.getElementById('mobile-menu');
+      mobileMenu.classList.toggle('hidden');
+    });
+    
+    // Add animation delay to articles
+    document.addEventListener('DOMContentLoaded', function() {
+      const articles = document.querySelectorAll('.article-card');
+      articles.forEach((article, index) => {
+        article.style.animationDelay = `${index * 0.1}s`;
+      });
+      
+      // Set today's date as default for date inputs if not already set
+      const dateInputs = document.querySelectorAll('input[type="date"]');
+      const today = new Date().toISOString().split('T')[0];
+      
+      dateInputs.forEach(input => {
+        if (!input.value) {
+          input.value = today;
+        }
+      });
+      
+      // Update hidden inputs when category changes
+      document.getElementById('category-select')?.addEventListener('change', function() {
+        document.getElementById('header-category-input').value = this.value;
+      });
+      
+      // Update date inputs when any date input changes
+      document.getElementById('specific-date')?.addEventListener('change', function() {
+        document.getElementById('header-date-input').value = this.value;
+      });
+    });
+  </script>
+</body>
 </html>
