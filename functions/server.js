@@ -17,10 +17,10 @@ app.use((req, _, next) => {
   req.url = req.url.replace(/^\/\.netlify\/functions\/server/, "");
   next();
 });
-//app.use(express.static(path.join(__dirname, '../public')));
-//let file = require("../views/index.ejs");
+app.use(express.static(path.join(__dirname, '../public')));
+// let file = require("../public/views/index.ejs");
 // View engine setup
-app.set("views", path.join(__dirname, "../views"));
+app.set("views", path.join(__dirname, "../public/views"));
 app.set("view engine", "ejs");
 
 // API key (consider using environment variables for production)
@@ -62,7 +62,7 @@ async function fetchNewsWithCache(url, cacheKey) {
     const response = await axios.get(url);
     const data = response.data;
     
-    console.log("FINAL-URL:", url);
+    //console.log("FINAL-URL:", url);
     // Cache the results
     cache.set(cacheKey, data);
     
