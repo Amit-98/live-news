@@ -4,24 +4,28 @@ const axios = require("axios");
 const moment = require("moment");
 const cors = require("cors");
 const serverless = require('serverless-http');
+const ejs = require('ejs'); // Explicitly require ejs
+
 // Initialize Express app
 const app = express();
 
 // Middleware
-
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Handle Netlify function path
 app.use((req, _, next) => {
-  req.url = req.url.replace(/^\/\.netlify\/functions\/server/, "");
+  req.url = req.url.replace(/^\/\.netlify\/functions/, "");
+  console.log("Request URL:", req.url);
   next();
 });
-app.use(express.static(path.join(__dirname, '../public')));
-// let file = require("../public/views/index.ejs");
-// View engine setup
-app.set("views", path.join(__dirname, "../public/views"));
+
+// Set up view engine
 app.set("view engine", "ejs");
+app.set('views', path.resolve(__dirname, '../public/views')); // Set views directory
+app.use(express.static(path.resolve(__dirname, 'public'))); // Serve static files from public directory
+//console.log('Views directory:', path.resolve(__dirname, '../public'));
 
 // API key (consider using environment variables for production)
 const API_KEY = "679b913ddb014617bcc93a0bb89ee1ee";
@@ -62,7 +66,7 @@ async function fetchNewsWithCache(url, cacheKey) {
     const response = await axios.get(url);
     const data = response.data;
     
-    //console.log("FINAL-URL:", url);
+    console.log("FINAL-URL:", url);
     // Cache the results
     cache.set(cacheKey, data);
     
@@ -102,6 +106,7 @@ app.get("/", async (req, res) => {
     const currentDate = getCurrentDate();
     // Use the everything endpoint with current date filter and US news
     const url = `${BASE_URL}/everything?q=us&language=en&sortBy=publishedAt&apiKey=${API_KEY}`;
+    console.log("Home URL:", url);
     const cacheKey = `everything-us-today-${currentDate}`;
     
     let data;
@@ -123,7 +128,7 @@ app.get("/", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching news:", error.message);
-    res.status(500).render("error", { 
+    res.render("error", { 
       message: "Error fetching news. Please try again later.",
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
@@ -176,7 +181,7 @@ app.get("/search", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching search results:", error.message);
-    res.status(500).render("error", { 
+    res.render("error", { 
       message: "Error fetching search results. Please try again later.",
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
@@ -223,7 +228,7 @@ app.get("/sort-by-date", async (req, res) => {
     });
   } catch (error) {
     console.error("Error sorting articles by date:", error.message);
-    res.status(500).render("error", { 
+    res.render("error", { 
       message: "Error sorting articles by date. Please try again later.",
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
@@ -268,7 +273,7 @@ app.get("/news-by-date", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching news by date:", error.message);
-    res.status(500).render("error", { 
+    res.render("error", { 
       message: "Error fetching news by date. Please try again later.",
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
@@ -295,17 +300,21 @@ app.get("/categories", async (req, res) => {
     });
   } catch (error) {
     console.error("Error fetching category news:", error.message);
-    res.status(500).render("error", { 
+    res.render("error", { 
       message: "Error fetching category news. Please try again later.",
       error: { status: 500, stack: process.env.NODE_ENV === 'development' ? error.stack : '' }
     });
   }
 });
 
+app.get('/error', (req, res) => {
+  res.render('error');
+});
+
 // Error handler middleware
 app.use((err, req, res, next) => {
   res.status(err.status || 500);
-  res.render('error', {
+  res.render("error", {
     message: err.message,
     error: process.env.NODE_ENV === 'development' ? err : {}
   });
@@ -313,16 +322,29 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).render('error', {
-    message: 'Page not found',
+  res.status(404).render("error", {
+    message: "Page not found",
     error: { status: 404 }
   });
 });
 
+// Handle Netlify function route
+app.use((req, res) => {
+  const currentDate = getCurrentDate();
+  res.render("index", { 
+    news: [],
+    currentPage: "home",
+    currentDate: currentDate
+  });
+});
+
+// Export handler for serverless
 module.exports.handler = serverless(app);
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Start server in non-serverless environments
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
