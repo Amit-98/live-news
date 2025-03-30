@@ -1,6 +1,10 @@
+[functions]
+  directory = "functions"
+  node_bundler = "esbuild"
+
 [build]
-  command = "npm install"
-  functions = "functions"
+  command = "npm run build" # or whatever your build command is
+  publish = "public" # You need a public directory for Netlify, even if empty
 
 [[redirects]]
   from = "/*"
