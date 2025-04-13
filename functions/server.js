@@ -23,7 +23,7 @@ app.use((req, _, next) => {
 
 // Set up view engine
 app.set("view engine", "ejs");
-app.set('views', path.resolve(__dirname, '../public/views')); // Set views directory
+app.set('views', path.resolve(__dirname, '../views')); // Set views directory
 app.use(express.static(path.resolve(__dirname, 'public'))); // Serve static files from public directory
 //console.log('Views directory:', path.resolve(__dirname, '../public'));
 
